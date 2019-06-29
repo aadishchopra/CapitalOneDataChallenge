@@ -1,0 +1,83 @@
+---
+title: "DataAnalysis"
+author: "Aadish Chopra"
+date: "6/28/2019"
+output: html_document
+---
+
+
+# Changing r_chunks global settings 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+```
+
+Sourcing the boostrap file and change the global paramters
+
+
+```{r loadbootstrap}
+suppressMessages(source('bootstrap.R'))
+suppressMessages(source('helperfunctions.R'))
+```
+
+# Exploratory data analysis
+
+
+```{r dimension analysis}
+dim(AirBNB)
+dim(ZillowData)
+
+```
+
+We see that AirBNB has 95 dimensions with 40753 observations and Zillow has 262 dimensions with 8946 observations.
+
+
+##Exploring AIRBNB data
+
+Let's us look at the data first. The metadata is also available in the docx document
+
+```{r viewdata ,eval=FALSE}
+
+# Looking at the first 90 columns 
+out_table <- cbind(names(AirBNB)[1:30],names(AirBNB)[31:60],names(AirBNB)[61:90])
+htmlTable(out_table,
+          cgroup = c("Set 1:30", "Set 31:60","Set 61:90"),
+          n.cgroup = c(3),
+          rnames = FALSE)
+
+
+```
+
+
+Data type read from csv while loading
+Reading a single row to understand the dataset 
+
+```{r columntypes}
+
+unique(lapply(AirBNB,class))
+
+```
+
+4 types of data were read : integer, character, numeric, logical 
+
+Since we loaded the data with the option string as Factors =FALSE. We will have to do some data manipulation to understand the right data type 
+
+
+URL columns would not be useful therefore removing these columns 
+
+```{r removeurlcolumns}
+AirBNB<-removethesecolumns(pattern_remove = "url",dataset = AirBNB)
+AirBNB<-removethesecolumns(pattern_remove = "scrape",dataset = AirBNB)
+
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
