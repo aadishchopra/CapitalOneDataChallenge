@@ -38,7 +38,7 @@ We see that AirBNB has 95 dimensions with 40753 observations and Zillow has 262 
 
 Let's us look at the data first. The metadata is also available in the docx document
 
-```{r viewdata ,eval=FALSE}
+```{r viewdata ,eval=FALSE,echo=FALSE}
 
 # Looking at the first 90 columns 
 out_table <- cbind(names(AirBNB)[1:30],names(AirBNB)[31:60],names(AirBNB)[61:90])
@@ -73,6 +73,25 @@ AirBNB<-removethesecolumns(pattern_remove = "scrape",dataset = AirBNB)
 
 ```
 
+
+What columns have NA values 
+
+
+```{r NAs}
+
+noofNA<-function(column){
+  sum(is.na(column))
+}
+
+how_many_NA<-apply(AirBNB, 2,noofNA )
+
+
+
+```
+
+
+We see that there are 2 columns which have no values at all. We can delete those columns. 
+As a rule of thumb we can safely remove columns which have missing values in ~[80]% of the rows
 
 ## R Markdown
 

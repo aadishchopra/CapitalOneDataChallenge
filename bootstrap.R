@@ -20,5 +20,5 @@ lapply(required_packages,load_required_packages )
 
 # Import the dataset
 
-AirBNB<-read.csv(file = "listings.csv",header = T,sep = ",",stringsAsFactors = F)
-ZillowData<-read.csv("Zip_Zhvi_2bedroom.csv",header = T,sep = ",",stringsAsFactors = F)
+AirBNB<-read.csv(file = "data/listings.csv",header = T,sep = ",",stringsAsFactors = F)
+ZillowData<-read.csv("data/Zip_Zhvi_2bedroom.csv",header = T,sep = ",",stringsAsFactors = F)
