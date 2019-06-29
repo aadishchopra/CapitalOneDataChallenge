@@ -6,3 +6,9 @@ removethesecolumns<-function(pattern_remove,dataset)
   dataset %>% select(-contains(pattern_remove,ignore.case = TRUE))
   
 }
+
+
+analyze_distinct_values<-function(column)
+{
+  length(unique(column))
+}

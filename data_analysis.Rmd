@@ -84,7 +84,8 @@ noofNA<-function(column){
 }
 
 how_many_NA<-apply(AirBNB, 2,noofNA )
-
+missing_values<-how_many_NA[how_many_NA>0]
+kable(x = missing_values,caption = "Missing value analysis")
 
 
 ```
@@ -92,6 +93,25 @@ how_many_NA<-apply(AirBNB, 2,noofNA )
 
 We see that there are 2 columns which have no values at all. We can delete those columns. 
 As a rule of thumb we can safely remove columns which have missing values in ~[80]% of the rows
+
+
+
+```{r}
+
+AirBNB<-AirBNB %>% select(-c('license','has_availability'))
+
+```
+
+
+There are columns which are disseminating no information. Let us analyze columns for unique values
+
+```{r}
+
+apply(AirBNB,2,analyze_distinct_values)
+
+```
+
+
 
 ## R Markdown
 
