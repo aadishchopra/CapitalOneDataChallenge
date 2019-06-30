@@ -137,10 +137,28 @@ Since 0 bedrooms can be a field which the user didn't enter or can be bad data
 
 #Fixing bedrooms with zero length 
 
+
+
 ```{r fix_0_bedrooms}
 
+ggplot(data = zero_bedrooms,mapping=aes(zero_bedrooms$beds,fill=zero_bedrooms$property_type))+
+geom_histogram()+
+scale_x_continuous(breaks = zero_bedrooms$beds)
+
+  
 ```
 
+Most of the data is for 1,2 and 3 beds
+
+```{r}
+p<-ggplot(data=zero_bedrooms,mapping = aes(zero_bedrooms$beds,zero_bedrooms$price))+
+geom_point()
+
+p+facet_grid(vars(zero_bedrooms$beds))
+
+plot(p)
+
+```
 
 
 ## R Markdown
