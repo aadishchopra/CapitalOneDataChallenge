@@ -12,3 +12,14 @@ analyze_distinct_values<-function(column)
 {
   length(unique(column))
 }
+
+
+
+strip_money<-function(dataset,pattern){
+  colnames(dataset[grep(pattern,colnames(dataset))])
+}
+
+remove_sign<-function(money,column)
+{
+  gsub(money,replacement = '',x =column )
+}

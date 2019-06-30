@@ -52,9 +52,26 @@ htmlTable(out_table,
 
 
 Data type read from csv while loading
-Reading a single row to understand the dataset 
+Reading a single row to understand the dataset
+
+Price and other columns associated with money are listed in dollars. For example $50. In order to do analysis we will be stripping the dollar sign off of the entire column 
+
 
 ```{r columntypes}
+
+#stripping the dollar sign off
+
+
+#identify which columns needs stripping
+remove_dollar<-strip_money(pattern = 'price',dataset = AirBNB)
+
+
+#strip dollar amount from these columns
+AirBNB[,remove_dollar]<-apply(AirBNB[,remove_dollar],2,FUN = remove_sign,money = "\\$")
+
+
+
+
 
 unique(lapply(AirBNB,class))
 
@@ -151,12 +168,11 @@ scale_x_continuous(breaks = zero_bedrooms$beds)
 Most of the data is for 1,2 and 3 beds
 
 ```{r}
-p<-ggplot(data=zero_bedrooms,mapping = aes(zero_bedrooms$beds,zero_bedrooms$price))+
-geom_point()
+zero_bedrooms$price<-as.numeric(zero_bedrooms$price)
+ggplot(data=zero_bedrooms,mapping = aes(zero_bedrooms$price))+
+geom_histogram(stat = 'count')+
+scale_x_continuous(0,200)
 
-p+facet_grid(vars(zero_bedrooms$beds))
-
-plot(p)
 
 ```
 
