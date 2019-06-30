@@ -65,11 +65,13 @@ Price and other columns associated with money are listed in dollars. For example
 #identify which columns needs stripping
 remove_dollar<-strip_money(pattern = 'price',dataset = AirBNB)
 
+#manually inspecting
+colnames(zero_bedrooms[zero_bedrooms %>% str_detect(pattern = '\\$')])
+additional_columns<-c('security_deposit','cleaning_fee','extra_people')
 
+remove_dollar<-c(remove_dollar,additional_columns)
 #strip dollar amount from these columns
 AirBNB[,remove_dollar]<-apply(AirBNB[,remove_dollar],2,FUN = remove_sign,money = "\\$")
-
-
 
 
 
@@ -103,15 +105,28 @@ noofNA<-function(column){
 how_many_NA<-apply(AirBNB, 2,noofNA )
 missing_values<-how_many_NA[how_many_NA>0]
 kable(x = missing_values,caption = "Missing value analysis")
-
 AirBNB<-AirBNB %>% select(-c('license','has_availability'))
+
+```
+
+Since we will be matching on location ,let us check the data integrity of zipcodes and latitude and longitude
+
+1) zipcode should be of length 5
+2) There are 618 rows which have improper length zipcodes. 
+
+We can use latitudes and longtitudes for those locations and compare it with others but we will deal with it later
+
+
+```{r}
+
+sum(str_count(AirBNB$zipcode,pattern = "[0-9]")==5)
+nrow(AirBNB)-sum(str_count(AirBNB$zipcode,pattern = "[0-9]")==5)
+
 ```
 
 
 We see that there are 2 columns which have no values at all. We can delete those columns. 
 As a rule of thumb we can safely remove columns which have missing values in ~[80]% of the rows
-
-
 
 
 There are columns which are disseminating no information. Let us analyze columns for unique values
@@ -126,6 +141,18 @@ From distinct value analysis we see that requires_license and experiences_offere
 
 
 The consultancy company has already identified that 2 bedroom properties are the most profitable. 
+
+Bedrooms is the variable we are filtering on for now, although later in the analysis we will try to include bedrooms of size 0 
+
+```{r filter_2_rooms}
+
+two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==2)
+
+str(two_room_property)
+
+```
+
+
 
 If time permits I would like to check which kind of property is most suitable
 
@@ -167,12 +194,13 @@ scale_x_continuous(breaks = zero_bedrooms$beds)
 
 Most of the data is for 1,2 and 3 beds
 
-```{r}
-zero_bedrooms$price<-as.numeric(zero_bedrooms$price)
-ggplot(data=zero_bedrooms,mapping = aes(zero_bedrooms$price))+
-geom_histogram(stat = 'count')+
-scale_x_continuous(0,200)
+```{r price_analysis}
 
+
+p<-ggplot(data=zero_bedrooms %>% filter(beds<4),mapping = aes(zero_bedrooms$price))+
+geom_histogram(stat = 'count')
+
+# p+facet_grid(vars(beds))
 
 ```
 
