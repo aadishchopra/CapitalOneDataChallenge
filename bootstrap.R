@@ -3,7 +3,7 @@
 # otherwise we can clone the repository and then do a pull 
 # Load all the libraries 
 
-required_packages<-c('knitr','dplyr','htmlTable','stringr')
+required_packages<-c('knitr','dplyr','htmlTable','stringr','ggplot2')
 load_required_packages<-function(required_packages){
   if(!require(required_packages,character.only = TRUE))
   {

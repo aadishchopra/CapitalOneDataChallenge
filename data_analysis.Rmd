@@ -87,7 +87,7 @@ how_many_NA<-apply(AirBNB, 2,noofNA )
 missing_values<-how_many_NA[how_many_NA>0]
 kable(x = missing_values,caption = "Missing value analysis")
 
-
+AirBNB<-AirBNB %>% select(-c('license','has_availability'))
 ```
 
 
@@ -96,18 +96,48 @@ As a rule of thumb we can safely remove columns which have missing values in ~[8
 
 
 
-```{r}
-
-AirBNB<-AirBNB %>% select(-c('license','has_availability'))
-
-```
-
 
 There are columns which are disseminating no information. Let us analyze columns for unique values
 
-```{r}
+```{r delete_no_information}
 
 apply(AirBNB,2,analyze_distinct_values)
+AirBNB<-AirBNB %>% select(-c('requires_license','experiences_offered'))
+```
+
+From distinct value analysis we see that requires_license and experiences_offered have no information at all 
+
+
+The consultancy company has already identified that 2 bedroom properties are the most profitable. 
+
+If time permits I would like to check which kind of property is most suitable
+
+```{r bedrooms}
+class(AirBNB$bedrooms)
+# let us see the distribution of the variable
+table(AirBNB$bedrooms)
+percentage_missing<-(sum(is.na(AirBNB$bedrooms))/nrow(AirBNB))*100
+
+zero_bedrooms<-AirBNB[AirBNB$bedrooms==0,]
+
+
+```
+
+We observer two things 
+
+1) 69 missing values or 0.17%
+2) frequency distribution shows that there are 3525 properties which are having 0 bedrooms.
+We will have to investigate this as to what kind of properties are they.
+
+
+We will only look at those properties which are 2 bedrooms
+
+Since 0 bedrooms can be a field which the user didn't enter or can be bad data
+
+
+#Fixing bedrooms with zero length 
+
+```{r fix_0_bedrooms}
 
 ```
 
