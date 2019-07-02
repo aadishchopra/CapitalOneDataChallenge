@@ -1,7 +1,7 @@
 ---
 title: "DataAnalysis"
 author: "Aadish Chopra"
-date: "6/28/2019"
+date: "7/1/2019"
 output: html_document
 ---
 
@@ -66,7 +66,7 @@ Price and other columns associated with money are listed in dollars. For example
 remove_dollar<-strip_money(pattern = 'price',dataset = AirBNB)
 
 #manually inspecting
-colnames(zero_bedrooms[zero_bedrooms %>% str_detect(pattern = '\\$')])
+#colnames(AirBNB[AirBNB %>% str_detect(pattern = '\\$')])
 additional_columns<-c('security_deposit','cleaning_fee','extra_people')
 
 remove_dollar<-c(remove_dollar,additional_columns)
@@ -135,6 +135,7 @@ There are columns which are disseminating no information. Let us analyze columns
 
 apply(AirBNB,2,analyze_distinct_values)
 AirBNB<-AirBNB %>% select(-c('requires_license','experiences_offered'))
+
 ```
 
 From distinct value analysis we see that requires_license and experiences_offered have no information at all 
@@ -148,7 +149,7 @@ Bedrooms is the variable we are filtering on for now, although later in the anal
 
 two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==2)
 
-str(two_room_property)
+
 
 ```
 
@@ -194,11 +195,11 @@ scale_x_continuous(breaks = zero_bedrooms$beds)
 
 Most of the data is for 1,2 and 3 beds
 
-```{r price_analysis}
+```{r price_analysis,eval=TRUE,echo=FALSE}
 
 
-p<-ggplot(data=zero_bedrooms %>% filter(beds<4),mapping = aes(zero_bedrooms$price))+
-geom_histogram(stat = 'count')
+# p<-ggplot(data=zero_bedrooms %>% filter(beds<4),mapping = aes(zero_bedrooms$price))+
+# geom_histogram(stat = 'count')
 
 # p+facet_grid(vars(beds))
 
