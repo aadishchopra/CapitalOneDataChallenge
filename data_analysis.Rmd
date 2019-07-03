@@ -73,9 +73,14 @@ remove_dollar<-c(remove_dollar,additional_columns)
 #strip dollar amount from these columns
 AirBNB[,remove_dollar]<-apply(AirBNB[,remove_dollar],2,FUN = remove_sign,money = "\\$")
 
+# convert characters to numeric columns
+
+AirBNB[,remove_dollar]<-apply(AirBNB[,remove_dollar],2, FUN =as.numeric)  
 
 
 unique(lapply(AirBNB,class))
+
+
 
 ```
 
@@ -98,13 +103,8 @@ What columns have NA values
 
 ```{r NAs}
 
-noofNA<-function(column){
-  sum(is.na(column))
-}
-
-how_many_NA<-apply(AirBNB, 2,noofNA )
-missing_values<-how_many_NA[how_many_NA>0]
-kable(x = missing_values,caption = "Missing value analysis")
+how_many_NA<-as.data.frame(unlist(apply(AirBNB, 2, noofNA)))
+kable(x = how_many_NA ,caption = "Missing value analysis")
 AirBNB<-AirBNB %>% select(-c('license','has_availability'))
 
 ```
@@ -147,11 +147,71 @@ Bedrooms is the variable we are filtering on for now, although later in the anal
 
 ```{r filter_2_rooms}
 
-two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==2)
+no_of_bedrooms<-2
+two_room_property<-
+  AirBNB %>% filter(AirBNB$bedrooms ==no_of_bedrooms)
+
+how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(two_room_property,MARGIN =  2, noofNA)))
+
+
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(count),desc(avg_price))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 10)%>% ggplot(.,mapping = aes(zipcode,avg_price))+geom_bar(stat = "identity")
+
+
 
 
 
 ```
+
+
+62 properties have blank or no zipcodes. 
+
+Clustering can be done using latitude or longitude. We will deal with this later
+
+
+###Identify which areas are good
+
+```{r}
+
+```
+
+
+
+
+
+
+
+```{r}
+calculate_profits<-function(market,property){}
+```
+
+
+
+Just one property in NJ , rest all of the properties are in NY. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Analyzing Zillow data set
+
+```{r analyze_zillow}
+
+
+
+```
+
+
+
+
+
 
 
 

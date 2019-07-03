@@ -19,3 +19,14 @@ remove_sign<-function(money,column)
 {
   gsub(money,replacement = '',x =column )
 }
+
+noofNA<-function(column)
+  {
+  
+  if(sum(is.na(column))>0)
+  {
+    sum(is.na(column))
+  }
+}
+
+
