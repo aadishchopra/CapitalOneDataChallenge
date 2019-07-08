@@ -7,7 +7,7 @@ required_packages<-c('knitr','dplyr','htmlTable','stringr','ggplot2')
 load_required_packages<-function(required_packages){
   if(!require(required_packages,character.only = TRUE))
   {
-    install.packages(required_packages,repos = "https://cloud.r-project.org/")
+    install.packages(required_packages)
     require(required_packages,character.only = TRUE)
   }
   else

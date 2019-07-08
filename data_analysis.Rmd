@@ -3,6 +3,7 @@ title: "DataAnalysis"
 author: "Aadish Chopra"
 date: "7/1/2019"
 output: html_document
+code_folding: hide
 ---
 
 
@@ -154,7 +155,7 @@ two_room_property<-
 how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(two_room_property,MARGIN =  2, noofNA)))
 
 
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(count),desc(avg_price))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 10)%>% ggplot(.,mapping = aes(zipcode,avg_price))+geom_bar(stat = "identity")
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(count),desc(avg_price))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(zipcode,avg_price))+geom_bar(stat = "identity")
 
 
 
@@ -170,8 +171,16 @@ Clustering can be done using latitude or longitude. We will deal with this later
 
 ###Identify which areas are good
 
-```{r}
+```{r visualizations,fig.width=10,echo=FALSE }
 
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(n_count=n()) %>% arrange(desc(n_count))%>% top_n(n = 25)%>%
+ggplot(data = .,mapping = aes(zipcode,n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 100,linetype='dashed',color='red')    
+
+
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=median(price,na.rm = T),count=n()) %>%arrange(desc(count),desc(avg_price))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(zipcode,avg_price))+geom_bar(stat = "identity")
+
+
+  
 ```
 
 
