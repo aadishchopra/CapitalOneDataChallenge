@@ -10,7 +10,7 @@ code_folding: hide
 # Changing r_chunks global settings 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,fig.width = 10)
 
 
 ```
@@ -211,7 +211,15 @@ Just one property in NJ , rest all of the properties are in NY.
 
 # Analyzing Zillow data set
 
+Filtering for new york City
 ```{r analyze_zillow}
+
+Z_NY<-ZillowData %>% filter(City=="New York") %>%
+select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
+
+tmydf = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
+plot(tmydf$`10314`)
+
 
 
 
