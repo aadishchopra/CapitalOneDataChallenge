@@ -193,6 +193,8 @@ two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zi
 
 m_air_zil<-merge(two_room_property,Z_NY,by = 'zipcode',suffixes = c('air','zil'))
 
+
+
 calculate_profits<-function(market,property){}
 ```
 
@@ -227,12 +229,15 @@ colnames(Z_NY[1])<-"zipcode"
 # taking the latest price as the price. to be changed in future
 
 tmydf = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
-tmydf$Date=unlist(lapply(seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month'),format,'%Y-%m'))
+tmydf$ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month')
 
 
+temp<-apply(tmydf,2,cbind.data.frame,tmydf['ds'])
 
+temp1<-lapply(temp, setNames,c('y','ds'))
 
-plot(tmydf$`10314`)
+lapply(temp1, prophet)
+
 
 
 
