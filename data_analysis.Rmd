@@ -149,8 +149,8 @@ Bedrooms is the variable we are filtering on for now, although later in the anal
 ```{r filter_2_rooms}
 
 no_of_bedrooms<-2
-two_room_property<-
-  AirBNB %>% filter(AirBNB$bedrooms ==no_of_bedrooms)
+f_city<-'New York'
+two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==no_of_bedrooms & city==f_city)
 
 how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(two_room_property,MARGIN =  2, noofNA)))
 
@@ -189,7 +189,10 @@ two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zi
 
 
 
-```{r}
+```{r mergeanalysis}
+
+m_air_zil<-merge(two_room_property,Z_NY,by = 'zipcode',suffixes = c('air','zil'))
+
 calculate_profits<-function(market,property){}
 ```
 
@@ -217,7 +220,18 @@ Filtering for new york City
 Z_NY<-ZillowData %>% filter(City=="New York") %>%
 select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
 
+# rename region name to zipcode for merging
+
+colnames(Z_NY[1])<-"zipcode"
+
+# taking the latest price as the price. to be changed in future
+
 tmydf = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
+tmydf$Date=unlist(lapply(seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month'),format,'%Y-%m'))
+
+
+
+
 plot(tmydf$`10314`)
 
 
