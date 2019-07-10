@@ -35,6 +35,46 @@ dim(ZillowData)
 We see that AirBNB has 95 dimensions with 40753 observations and Zillow has 262 dimensions with 8946 observations.
 
 
+# Analyzing Zillow data set
+
+Filtering for new york City
+```{r analyze_zillow,warning=FALSE,message=FALSE}
+
+Z_NY<-ZillowData %>% filter(City=="New York") %>%
+select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
+colnames(Z_NY)[1]<-"zipcode"
+trans_zil = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
+present<-data.frame(ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month'))
+future<-data.frame(ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2019/08/01'),by = 'month'))
+bind_for_prophet<-apply(trans_zil,2,cbind.data.frame,present)
+bind_for_prophet<-lapply(bind_for_prophet, setNames,c('y','ds'))
+make_model<-lapply(bind_for_prophet, prophet)
+forecast<-lapply(make_model, predict,future)
+extract_yhat<-lapply(forecast, function(x) x[, 'yhat'][nrow(future)])
+Z_NY$predicted_price<-extract_yhat
+
+
+# create examples to show fitting and plotting 
+dyplot.prophet(make_model$`10025`,forecast$`10025`)
+
+
+cols<-c('zipcode','predicted_price')
+
+# Use this
+
+Z_NY_predicted<-Z_NY[,cols]
+
+
+#mapply(dyplot.prophet , make_model,forecast)
+
+
+
+```
+
+
+
+
+
 ##Exploring AIRBNB data
 
 Let's us look at the data first. The metadata is also available in the docx document
@@ -58,7 +98,7 @@ Reading a single row to understand the dataset
 Price and other columns associated with money are listed in dollars. For example $50. In order to do analysis we will be stripping the dollar sign off of the entire column 
 
 
-```{r columntypes}
+```{r columntypes,warning=FALSE,message=FALSE}
 
 #stripping the dollar sign off
 
@@ -77,10 +117,6 @@ AirBNB[,remove_dollar]<-apply(AirBNB[,remove_dollar],2,FUN = remove_sign,money =
 # convert characters to numeric columns
 
 AirBNB[,remove_dollar]<-apply(AirBNB[,remove_dollar],2, FUN =as.numeric)  
-
-
-unique(lapply(AirBNB,class))
-
 
 
 ```
@@ -146,22 +182,31 @@ The consultancy company has already identified that 2 bedroom properties are the
 
 Bedrooms is the variable we are filtering on for now, although later in the analysis we will try to include bedrooms of size 0 
 
+
+
+
 ```{r filter_2_rooms}
 
 no_of_bedrooms<-2
-f_city<-'New York'
-two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==no_of_bedrooms & city==f_city)
+air_two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==no_of_bedrooms)
 
-how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(two_room_property,MARGIN =  2, noofNA)))
-
-
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(count),desc(avg_price))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(zipcode,avg_price))+geom_bar(stat = "identity")
-
-
+how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(air_two_room_property,MARGIN =  2, noofNA)))
 
 
 
 ```
+
+
+
+```{r mergeanalysis}
+
+two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
+calculate_profits<-function(market,property){}
+
+
+```
+
+
 
 
 62 properties have blank or no zipcodes. 
@@ -171,80 +216,24 @@ Clustering can be done using latitude or longitude. We will deal with this later
 
 ###Identify which areas are good
 
-```{r visualizations,fig.width=10,echo=FALSE }
+```{r visualizations,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE }
 
 two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(n_count=n()) %>% arrange(desc(n_count))%>% top_n(n = 25)%>%
-ggplot(data = .,mapping = aes(zipcode,n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 100,linetype='dashed',color='red')    
+ggplot(data = .,mapping = aes(zipcode,n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 100,linetype='dashed',color='red')+ggtitle("Count of properties plotted against zipcode")  
 
 
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=median(price,na.rm = T),count=n()) %>%arrange(desc(count),desc(avg_price))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(zipcode,avg_price))+geom_bar(stat = "identity")
+
+
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(avg_price),count)%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(zipcode,avg_price))+geom_bar(stat = "identity")+ggtitle("Plot of average price against zipcode")
+
+
+
+
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(median_price=median(price,na.rm = T),count=n()) %>%arrange(desc(median_price),desc(count))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(zipcode,median_price))+geom_bar(stat = "identity")+ggtitle("Plot of median price against zipcode")
 
 
   
 ```
-
-
-
-
-
-
-
-```{r mergeanalysis}
-
-m_air_zil<-merge(two_room_property,Z_NY,by = 'zipcode',suffixes = c('air','zil'))
-
-
-
-calculate_profits<-function(market,property){}
-```
-
-
-
-Just one property in NJ , rest all of the properties are in NY. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Analyzing Zillow data set
-
-Filtering for new york City
-```{r analyze_zillow}
-
-Z_NY<-ZillowData %>% filter(City=="New York") %>%
-select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
-# rename region name to zipcode for merging
-colnames(Z_NY[1])<-"zipcode"
-trans_zil = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
-present<-data.frame(ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month'))
-future<-data.frame(ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2019/08/01'),by = 'month'))
-bind_for_prophet<-apply(trans_zil,2,cbind.data.frame,present)
-bind_for_prophet<-lapply(bind_for_prophet, setNames,c('y','ds'))
-make_model<-lapply(bind_for_prophet, prophet)
-forecast<-lapply(make_model, predict,future)
-extract_yhat<-lapply(forecast, function(x) x[, 'yhat'])
-
-
-#mapply(dyplot.prophet , make_model,forecast)
-
-
-
-
-
-
-```
-
-
-
-
 
 
 
