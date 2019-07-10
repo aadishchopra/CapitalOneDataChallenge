@@ -11,7 +11,7 @@ code_folding: hide
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,fig.width = 10)
-
+options(scipen=99999)
 
 ```
 
@@ -51,18 +51,19 @@ bind_for_prophet<-lapply(bind_for_prophet, setNames,c('y','ds'))
 make_model<-lapply(bind_for_prophet, prophet)
 forecast<-lapply(make_model, predict,future)
 extract_yhat<-lapply(forecast, function(x) x[, 'yhat'][nrow(future)])
-Z_NY$predicted_price<-extract_yhat
+Z_NY$predicted_price<-unlist(extract_yhat)
 
 
 # create examples to show fitting and plotting 
 dyplot.prophet(make_model$`10025`,forecast$`10025`)
 
 
-cols<-c('zipcode','predicted_price')
+cols<-c('zipcode','X2017.06','predicted_price')
 
 # Use this
 
 Z_NY_predicted<-Z_NY[,cols]
+Z_NY_predicted$zipcode<-as.factor(Z_NY_predicted$zipcode)
 
 
 #mapply(dyplot.prophet , make_model,forecast)
@@ -173,6 +174,11 @@ There are columns which are disseminating no information. Let us analyze columns
 apply(AirBNB,2,analyze_distinct_values)
 AirBNB<-AirBNB %>% select(-c('requires_license','experiences_offered'))
 
+# converting into factor
+
+
+
+
 ```
 
 From distinct value analysis we see that requires_license and experiences_offered have no information at all 
@@ -186,10 +192,9 @@ Bedrooms is the variable we are filtering on for now, although later in the anal
 
 
 ```{r filter_2_rooms}
-
+#
 no_of_bedrooms<-2
 air_two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==no_of_bedrooms)
-
 how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(air_two_room_property,MARGIN =  2, noofNA)))
 
 
@@ -201,6 +206,8 @@ how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(air_two_room_property,MARGIN 
 ```{r mergeanalysis}
 
 two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
+two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neighbourhood_group_cleansed)
+
 calculate_profits<-function(market,property){}
 
 
@@ -218,20 +225,41 @@ Clustering can be done using latitude or longitude. We will deal with this later
 
 ```{r visualizations,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE }
 
+theme_set(theme_bw())
+
 two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(n_count=n()) %>% arrange(desc(n_count))%>% top_n(n = 25)%>%
-ggplot(data = .,mapping = aes(zipcode,n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 100,linetype='dashed',color='red')+ggtitle("Count of properties plotted against zipcode")  
+ggplot(data = .,mapping = aes(reorder(zipcode,-n_count),n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 70,linetype='dashed',color='red')+ggtitle("Count of properties plotted against zipcode")  
+
+# boxplot to show variations in price within a zipcode
 
 
+ggplot(data=two_room_property,mapping = aes(zipcode,price))+
+geom_boxplot(outlier.colour = "red",varwidth = TRUE)+ggtitle("Variation of price within a zipcode")
 
 
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(avg_price),count)%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(zipcode,avg_price))+geom_bar(stat = "identity")+ggtitle("Plot of average price against zipcode")
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(avg_price),count)%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-avg_price),avg_price))+geom_bar(stat = "identity")+ggtitle("Plot of average price against zipcode")
 
 
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(median_price=median(price,na.rm = T),count=n()) %>%arrange(desc(median_price),desc(count))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-median_price),median_price))+geom_bar(stat = "identity",mapping = aes(fill="blue"))+ggtitle("Plot of median price against zipcode")+xlab("zipcode")
+
+# In which neighborhood these properties are located 
+
+two_room_property %>% group_by(neighbourhood_group_cleansed) %>% summarise(avg_price=mean(price,na.rm = T)) %>% arrange(desc(avg_price)) %>% select(neighbourhood_group_cleansed,avg_price)%>% ggplot(.,mapping = aes(neighbourhood_group_cleansed,avg_price,fill=neighbourhood_group_cleansed))+geom_bar(stat='identity')
+
+# which zipcodes are located in which location 
 
 
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(median_price=median(price,na.rm = T),count=n()) %>%arrange(desc(median_price),desc(count))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(zipcode,median_price))+geom_bar(stat = "identity")+ggtitle("Plot of median price against zipcode")
+ 
 
 
+p1<-ggplot(data = Z_NY_predicted,mapping = aes(x=reorder(zipcode,-predicted_price),y=predicted_price))+
+geom_bar(stat='identity')+ggtitle("Decreasing predicted price plotted against zipcode")+xlab("zipcode")
+
+
+p2<-ggplot(data = Z_NY_predicted,mapping = aes(x=reorder(zipcode,-X2017.06),y=X2017.06))+
+geom_bar(stat='identity')+ggtitle("Decreasing actual price plotted against zipcode")+xlab("zipcode")+ylab("June 2017")
+
+grid.arrange(arrangeGrob(p1, p2))
   
 ```
 
@@ -245,7 +273,6 @@ class(AirBNB$bedrooms)
 # let us see the distribution of the variable
 table(AirBNB$bedrooms)
 percentage_missing<-(sum(is.na(AirBNB$bedrooms))/nrow(AirBNB))*100
-
 zero_bedrooms<-AirBNB[AirBNB$bedrooms==0,]
 
 
