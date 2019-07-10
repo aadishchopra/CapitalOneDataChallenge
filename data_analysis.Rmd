@@ -226,18 +226,15 @@ select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
 
 colnames(Z_NY[1])<-"zipcode"
 
-# taking the latest price as the price. to be changed in future
+trans_zil = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
+trans_zil$ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month')
 
-tmydf = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
-tmydf$ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month')
+bind_for_prophet<-apply(trans_zil,2,cbind.data.frame,trans_zil['ds'])
+bind_for_prophet<-lapply(temp, setNames,c('y','ds'))
+make_model<-lapply(temp1, prophet)
+forecast<-lapply(ex_yhat, predict,data.frame(ds="2018-05-01"))
 
-
-temp<-apply(tmydf,2,cbind.data.frame,tmydf['ds'])
-
-temp1<-lapply(temp, setNames,c('y','ds'))
-
-lapply(temp1, prophet)
-
+lapply(make_model, dyplot.prophet,forecast)
 
 
 
