@@ -225,16 +225,17 @@ select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
 # rename region name to zipcode for merging
 
 colnames(Z_NY[1])<-"zipcode"
-
 trans_zil = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
-trans_zil$ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month')
+#trans_zil$ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month')
+present<-data.frame(ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month'))
+future<-data.frame(ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2019/06/01'),by = 'month'))
+bind_for_prophet<-apply(trans_zil,2,cbind.data.frame,present)
+bind_for_prophet<-lapply(bind_for_prophet, setNames,c('y','ds'))
+make_model<-lapply(bind_for_prophet, prophet)
 
-bind_for_prophet<-apply(trans_zil,2,cbind.data.frame,trans_zil['ds'])
-bind_for_prophet<-lapply(temp, setNames,c('y','ds'))
-make_model<-lapply(temp1, prophet)
-forecast<-lapply(ex_yhat, predict,data.frame(ds="2018-05-01"))
+forecast<-lapply(make_model, predict,future)
 
-lapply(make_model, dyplot.prophet,forecast)
+
 
 
 
