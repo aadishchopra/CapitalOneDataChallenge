@@ -1,7 +1,7 @@
 ---
 title: "DataAnalysis"
 author: "Aadish Chopra"
-date: "7/1/2019"
+date: "7/8/2019"
 output: html_document
 code_folding: hide
 ---
@@ -176,9 +176,6 @@ AirBNB<-AirBNB %>% select(-c('requires_license','experiences_offered'))
 
 # converting into factor
 
-
-
-
 ```
 
 From distinct value analysis we see that requires_license and experiences_offered have no information at all 
@@ -201,6 +198,7 @@ how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(air_two_room_property,MARGIN 
 
 ```
 
+#Occupancy rate calculation
 
 
 ```{r mergeanalysis}
@@ -208,7 +206,18 @@ how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(air_two_room_property,MARGIN 
 two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
 two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neighbourhood_group_cleansed)
 
-calculate_profits<-function(market,property){}
+
+occupancy_score=two_room_property$number_of_reviews*two_room_property$review_scores_value
+occupancy_score=rescale(occupancy_score,c(0,100))
+
+
+
+kable(data.frame(occupancy_score=c('75-100','50-75','25-50','0-25'),occupancy_rate=c('75%','65%','55%','45%')),caption = "Occupancy rate based on review score and number of reviews")
+
+two_room_property$occupancy_rate<-cut(occupancy_score, 
+                    breaks = c(0,25,50,75,100), 
+                    labels = c(".45", ".55", ".65", ".75"), 
+                    right = FALSE)
 
 
 ```
@@ -248,7 +257,8 @@ two_room_property %>% group_by(neighbourhood_group_cleansed) %>% summarise(avg_p
 
 # which zipcodes are located in which location 
 
-
+ggplot(data=two_room_property,mapping=aes(zipcode,fill=neighbourhood_group_cleansed))+
+geom_histogram(stat='count')+facet_grid(neighbourhood_group_cleansed~.)  
  
 
 
@@ -316,10 +326,3 @@ Most of the data is for 1,2 and 3 beds
 ```
 
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
