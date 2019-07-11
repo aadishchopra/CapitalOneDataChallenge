@@ -1,5 +1,5 @@
 ---
-title: "DataAnalysis"
+title: "AirBNB Zillow Data Challenge for Capital One"
 author: "Aadish Chopra"
 date: "7/8/2019"
 output: html_document
@@ -7,10 +7,8 @@ code_folding: hide
 ---
 
 
-# Changing r_chunks global settings 
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,fig.width = 10)
+knitr::opts_chunk$set(echo = TRUE,fig.width = 10,warning = FALSE,message = FALSE)
 options(scipen=99999)
 
 ```
@@ -19,9 +17,89 @@ Sourcing the boostrap file and change the global paramters
 
 
 ```{r loadbootstrap}
-suppressMessages(source('bootstrap.R'))
-suppressMessages(source('helperfunctions.R'))
+# data is assumed to be locally available 
+
+# otherwise we can clone the repository and then do a pull 
+# Load all the libraries 
+
+required_packages<-c('knitr','dplyr','htmlTable','stringr','ggplot2','prophet','gridExtra','scales','mice')
+load_required_packages<-function(required_packages){
+  if(!require(required_packages,character.only = TRUE))
+  {
+    install.packages(required_packages)
+    require(required_packages,character.only = TRUE)
+  }
+  else
+  {
+    require(required_packages,character.only = TRUE)
+  }
+}
+
+lapply(required_packages,load_required_packages )
+
+# Import the dataset
+if(!file.exists('data/listings.csv'))
+{
+  listing_tar<-download.file(url="http://data.insideairbnb.com/united-states/ny/new-york-city/2017-05-02/data/listings.csv.gz",destfile = "data/listings.csv.gz")
+  untar(tarfile = 'data/listings.csv.gz',exdir = 'data')  
+}
+
+if(!file.exists('data/Zip_Zhvi_2bedroom.csv')){
+untar(tarfile = 'data/Zip_Zhvi_2bedroom.csv.zip',exdir = 'data')
+}
+
+AirBNB<-read.csv(file = "data/listings.csv",header = T,sep = ",",stringsAsFactors = F)
+ZillowData<-read.csv("data/Zip_Zhvi_2bedroom.csv",header = T,sep = ",",stringsAsFactors = F)
+
+
 ```
+
+
+
+
+```{r load_helper_functions}
+removethesecolumns<-function(pattern_remove,dataset)
+{
+  #stricter type checking can also be used but leaving that out here 
+  message(" removing column ")
+  message(grep(pattern = pattern_remove,x = names(dataset),value = T))
+  dataset %>% select(-contains(pattern_remove,ignore.case = TRUE))
+}
+
+analyze_distinct_values<-function(column)
+{
+  length(unique(column))
+}
+
+strip_money<-function(dataset,pattern){
+  colnames(dataset[grep(pattern,colnames(dataset))])
+}
+
+remove_sign<-function(money,column)
+{
+  gsub(money,replacement = '',x =column )
+}
+
+noofNA<-function(column)
+  {
+  
+  if(sum(is.na(column))>0)
+  {
+    sum(is.na(column))
+  }
+}
+
+
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+
+```
+
+
+
 
 # Exploratory data analysis
 
@@ -93,8 +171,6 @@ htmlTable(out_table,
 ```
 
 
-Data type read from csv while loading
-Reading a single row to understand the dataset
 
 Price and other columns associated with money are listed in dollars. For example $50. In order to do analysis we will be stripping the dollar sign off of the entire column 
 
@@ -137,7 +213,8 @@ AirBNB<-removethesecolumns(pattern_remove = "scrape",dataset = AirBNB)
 
 
 What columns have NA values 
-
+We see that there are 2 columns which have no values at all. We can delete those columns. 
+As a rule of thumb we can safely remove columns which have missing values in ~[80]% of the rows
 
 ```{r NAs}
 
@@ -150,9 +227,6 @@ AirBNB<-AirBNB %>% select(-c('license','has_availability'))
 Since we will be matching on location ,let us check the data integrity of zipcodes and latitude and longitude
 
 1) zipcode should be of length 5
-2) There are 618 rows which have improper length zipcodes. 
-
-We can use latitudes and longtitudes for those locations and compare it with others but we will deal with it later
 
 
 ```{r}
@@ -163,8 +237,7 @@ nrow(AirBNB)-sum(str_count(AirBNB$zipcode,pattern = "[0-9]")==5)
 ```
 
 
-We see that there are 2 columns which have no values at all. We can delete those columns. 
-As a rule of thumb we can safely remove columns which have missing values in ~[80]% of the rows
+
 
 
 There are columns which are disseminating no information. Let us analyze columns for unique values
@@ -183,7 +256,7 @@ From distinct value analysis we see that requires_license and experiences_offere
 
 The consultancy company has already identified that 2 bedroom properties are the most profitable. 
 
-Bedrooms is the variable we are filtering on for now, although later in the analysis we will try to include bedrooms of size 0 
+
 
 
 
@@ -198,7 +271,7 @@ how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(air_two_room_property,MARGIN 
 
 ```
 
-#Occupancy rate calculation
+#What properties to invest in ?
 
 
 ```{r mergeanalysis}
@@ -206,28 +279,35 @@ how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(air_two_room_property,MARGIN 
 two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
 two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neighbourhood_group_cleansed)
 
-
-occupancy_score=two_room_property$number_of_reviews*two_room_property$review_scores_value
-occupancy_score=rescale(occupancy_score,c(0,100))
-
-
-
+two_room_property$occupancy_score=two_room_property$review_scores_rating
 kable(data.frame(occupancy_score=c('75-100','50-75','25-50','0-25'),occupancy_rate=c('75%','65%','55%','45%')),caption = "Occupancy rate based on review score and number of reviews")
 
-two_room_property$occupancy_rate<-cut(occupancy_score, 
+two_room_property$occupancy_rate<-cut(two_room_property$occupancy_score, 
                     breaks = c(0,25,50,75,100), 
                     labels = c(".45", ".55", ".65", ".75"), 
-                    right = FALSE)
+                    right = TRUE)
+two_room_property$occupancy_rate=as.numeric(as.character(two_room_property$occupancy_rate))
+days=30
+months=12
+two_room_property$breakeven_years=two_room_property$X2017.06/(two_room_property$price*two_room_property$occupancy_rate*months*days)
+sum(is.na(two_room_property$occupancy_rate))
 
+# profit-loss matrix by taking averages across the zipcodes
+
+two_room_property %>% group_by(zipcode) %>% summarise(avg_return_in_years=mean(breakeven_years,na.rm = T),avg_airbnb_price=mean(price,na.rm = T),avg_cost_price=mean(X2017.06,na.rm = T),count=n()) %>% arrange((avg_return_in_years))
+ 
+# profit-loss matrix by taking median across the zipcodes
+
+two_room_property %>% group_by(zipcode) %>% summarise(median_return_in_years=median(breakeven_years,na.rm = T),median_airbnb_price=median(price,na.rm = T),median_cost_price=median(X2017.06,na.rm = T),count=n()) %>% arrange((median_return_in_years))
 
 ```
 
 
 
 
-62 properties have blank or no zipcodes. 
+ 
 
-Clustering can be done using latitude or longitude. We will deal with this later
+
 
 
 ###Identify which areas are good
@@ -237,7 +317,7 @@ Clustering can be done using latitude or longitude. We will deal with this later
 theme_set(theme_bw())
 
 two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(n_count=n()) %>% arrange(desc(n_count))%>% top_n(n = 25)%>%
-ggplot(data = .,mapping = aes(reorder(zipcode,-n_count),n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 70,linetype='dashed',color='red')+ggtitle("Count of properties plotted against zipcode")  
+ggplot(data = .,mapping = aes(reorder(zipcode,-n_count),n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 70,linetype='dashed',color='red')+ggtitle("Count of properties plotted against zipcode")+xlab('zipcode')+ylab('count')  
 
 # boxplot to show variations in price within a zipcode
 
@@ -246,14 +326,14 @@ ggplot(data=two_room_property,mapping = aes(zipcode,price))+
 geom_boxplot(outlier.colour = "red",varwidth = TRUE)+ggtitle("Variation of price within a zipcode")
 
 
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(avg_price),count)%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-avg_price),avg_price))+geom_bar(stat = "identity")+ggtitle("Plot of average price against zipcode")
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(avg_price),count)%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-avg_price),avg_price))+geom_bar(stat = "identity")+ggtitle("Plot of average AIRBNB price against zipcode")+xlab('zipcode')
 
 
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(median_price=median(price,na.rm = T),count=n()) %>%arrange(desc(median_price),desc(count))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-median_price),median_price))+geom_bar(stat = "identity",mapping = aes(fill="blue"))+ggtitle("Plot of median price against zipcode")+xlab("zipcode")
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(median_price=median(price,na.rm = T),count=n()) %>%arrange(desc(median_price),desc(count))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-median_price),median_price))+geom_bar(stat = "identity",mapping = aes(fill="blue"))+ggtitle("Plot of median AIRBNB price against zipcode")+xlab("zipcode")
 
 # In which neighborhood these properties are located 
 
-two_room_property %>% group_by(neighbourhood_group_cleansed) %>% summarise(avg_price=mean(price,na.rm = T)) %>% arrange(desc(avg_price)) %>% select(neighbourhood_group_cleansed,avg_price)%>% ggplot(.,mapping = aes(neighbourhood_group_cleansed,avg_price,fill=neighbourhood_group_cleansed))+geom_bar(stat='identity')
+two_room_property %>% group_by(neighbourhood_group_cleansed) %>% summarise(avg_price=mean(price,na.rm = T)) %>% arrange(desc(avg_price)) %>% select(neighbourhood_group_cleansed,avg_price)%>% ggplot(.,mapping = aes(neighbourhood_group_cleansed,avg_price,fill=neighbourhood_group_cleansed))+geom_bar(stat='identity')+xlab("neighbourhood")+ggtitle("Variation of price within the neighborhood")
 
 # which zipcodes are located in which location 
 
@@ -325,4 +405,10 @@ Most of the data is for 1,2 and 3 beds
 
 ```
 
+Clustering can be done using latitude or longitude. We will deal with this later
 
+2) There are 618 rows which have improper length zipcodes. 
+
+We can use latitudes and longtitudes for those locations and compare it with others but we will deal with it later
+
+Bedrooms is the variable we are filtering on for now, although later in the analysis we will try to include bedrooms of size 0 
