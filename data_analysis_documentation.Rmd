@@ -168,17 +168,16 @@ Z_NY_predicted$zipcode<-as.factor(Z_NY_predicted$zipcode)
 
 ```
 
+Following graph show us the trends in the price. Data has been taken from the Zillow Data set
 
-Price trend of zipcode **10025 **
-
+Cost Price trend of zipcode **11231 **
+Cost Price trend of zipcode **11217 **
 
 ```{r}
-dyplot.prophet(make_model$`10025`,forecast$`10025`)
+dyplot.prophet(make_model$`11231`,forecast$`11231`)
 
+dyplot.prophet(make_model$`11217`,forecast$`11217`)
 ```
-
-
-
 
 
 
@@ -439,6 +438,14 @@ ggtitle("Breakeven analysis taking the median price ")
 # Conclusion 
 
 The ROI is less for some zipcodes but there are not many properties. We atleast need a few properties to be able to make a firm decision.  
+
+Therefore the zipcodes to invest in are 
+
+ + <span style="color:blue">11231</span>
+ + <span style="color:blue">11217</span>
+ + <span style="color:blue">11215</span>
+ + <span style="color:blue">10036</span>
+ + <span style="color:blue">10025</span>
 
 
 # Future Steps
