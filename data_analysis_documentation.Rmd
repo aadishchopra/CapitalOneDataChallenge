@@ -1,10 +1,9 @@
 ---
-title: "AirBNB Zillow Data Challenge for Capital One"
+title: "AirBNB Zillow Data Challenge Document for Capital One"
 author: "Aadish Chopra"
 date: "7/8/2019"
 output: html_document
 ---
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE,fig.width = 10,warning = FALSE,message = FALSE)
@@ -12,6 +11,20 @@ options(scipen=99999)
 
 ```
 
+
+# Assumptions
+
+1. Occupancy rate has been assumed to be constant throughout the year irrespective of the fact that it can change due to       holidays
+2. Review score rating has been used to adjudicate the occupancy rate since it is Overall score given based on 
+   + accuracy, 
+   + cleanliness, 
+   + check-in, 
+   + communication, 
+   + location, 
+   + and value. 
+3. Cost of property has been calculated using forecasting using the Zillow Data set. Extraneous variables which can affect     the cost of the property have been ignored.
+4. Graphs and plots have been plotted majorly by removing missing values 
+5. Mean and median prices have been taken to calculate the profit-loss 
 
 
 Installing the required packages and loading the dataset from source
@@ -120,6 +133,7 @@ We see that AirBNB has 95 dimensions with 40753 observations and Zillow has 262 
 # Analyzing Zillow data set
 
 Filtering for new york City
+
 ```{r analyze_zillow,warning=FALSE,message=FALSE}
 
 Z_NY<-ZillowData %>% filter(City=="New York") %>%
@@ -210,6 +224,9 @@ AirBNB[,remove_dollar]<-apply(AirBNB[,remove_dollar],2, FUN =as.numeric)
 ```
 
 
+Since we loaded the data with the option string as Factors =FALSE. We will have to do some data manipulation to understand the right data type 
+
+
 URL columns would not be useful therefore removing these columns 
 
 ```{r removeurlcolumns}
@@ -232,7 +249,6 @@ Missing value analysis
 how_many_NA<-data.frame('missing values'=sort(unlist(apply(AirBNB, 2, noofNA)),decreasing = T))
 kable(x = how_many_NA ,caption = "Missing value analysis")
 
-
 ```
 
 
@@ -242,7 +258,6 @@ Distribution of bedrooms variable within
 
 ```{r}
 # let us see the distribution of the bedrooms variable 
-
 barplot(table(AirBNB$bedrooms),col = "blue")
 
 ```
@@ -275,7 +290,6 @@ kable(x=sort(apply(AirBNB,2,analyze_distinct_values),decreasing = T),col.names =
 AirBNB<-AirBNB %>% select(-c('requires_license','experiences_offered'))
 
 
-
 ```
 
 From distinct value analysis we see that requires_license and experiences_offered have no information at all 
@@ -294,13 +308,12 @@ kable(how_many_NA_2_bedrooms,caption = "Missing values in the filtered data set"
 ```
 
 
+
 ```{r merging_by_zipcode}
 two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
 two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neighbourhood_group_cleansed)
 
 ```
-
-
 
 
 ### Visualizations of the properties versus price and other parameters
@@ -309,7 +322,7 @@ two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neig
 
 ```{r visualizations,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE }
 
-
+two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
 theme_set(theme_bw())
 
 two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(n_count=n()) %>% arrange(desc(n_count))%>% top_n(n = 25)%>%
@@ -351,13 +364,10 @@ grid.arrange(arrangeGrob(p1, p2))
 
 #What properties to invest in ?
 
-
 Time Period has been taken to be a year which is equivalent of multiplying 30 days in a month and 12 months
 
-
-
-
 ```{r mergeanalysis}
+
 
 two_room_property$occupancy_score=two_room_property$review_scores_rating
 kable(data.frame(occupancy_score=c('75-100','50-75','25-50','0-25'),occupancy_rate=c('75%','65%','55%','45%')),caption = "Occupancy rate based on review score and number of reviews")
@@ -395,7 +405,6 @@ kable(ROI_median,caption = "ROI using the median price in years")
 
 ```
 
-
 Filtering out properties having count less than 50
 
 ```{r atleast50count}
@@ -426,19 +435,21 @@ ggtitle("Breakeven analysis taking the median price ")
 ```
 
 
-We will only look at those properties which are 2 bedrooms
-Since 0 bedrooms can be a field which the user didn't enter or can be bad data
-If time permits I would like to check which kind of property is most suitable
-Fixing bedrooms with zero length 
-Most of the data is for 1,2 and 3 beds
 
-Clustering can be done using latitude or longitude. We will deal with this later
+# Conclusion 
 
-2) There are 618 rows which have improper length zipcodes. 
+The ROI is less for some zipcodes but there are not many properties. We atleast need a few properties to be able to make a firm decision.  
 
-We can use latitudes and longtitudes for those locations and compare it with others but we will deal with it later
 
-Bedrooms is the variable we are filtering on for now, although later in the analysis we will try to include bedrooms of size 0 
+# Future Steps
 
-2) frequency distribution shows that there are 3525 properties which are having 0 bedrooms.
-We will have to investigate this as to what kind of properties are they.
+1. Properties other than 2 bedrooms should be looked at. Since there are over 35,000 observations it is a       rich data set
+2. Factors such as transportation, proximity to work location can be used to map the area for long-term         rentals
+3. Since we only have data for short-term rentals, it would be a good opportunity to look at the prospect of    a profit in long term rentals especially New-York being the financial capital
+4. Analysis of property based on the property type 
+   + Apartment
+   + House
+   + Condo
+5. There are 618 rows which have improper length zipcodes. These can be imputed using the latitude and          longitudes
+
+
