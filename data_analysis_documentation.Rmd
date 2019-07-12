@@ -6,10 +6,18 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,fig.width = 10,warning = FALSE,message = FALSE)
+knitr::opts_chunk$set(echo = FALSE,fig.width = 10,warning = FALSE,message = FALSE)
 options(scipen=99999)
 
 ```
+
+# Problem Statement
+
+You are consulting for a real estate company that has a niche in purchasing properties to rent out short-term as part of their business model specifically within New York City.  The real estate company has already concluded that two bedroom properties are the most profitable; however, they do not know which zip codes are the best to invest in.    
+
+# Objective
+
+Find properties based on zipcodes in the new york city which would yield the maximum return on investment (ROI)
 
 
 # Assumptions
@@ -23,16 +31,25 @@ options(scipen=99999)
    + location, 
    + and value. 
 3. Cost of property has been calculated using forecasting using the Zillow Data set. Extraneous variables which can affect     the cost of the property have been ignored.
-4. Graphs and plots have been plotted majorly by removing missing values 
-5. Mean and median prices have been taken to calculate the profit-loss 
+4. Some of the visualizations have been plotted by removing missing values .
+5. Mean and median prices have been taken to calculate the breakeven period. 
 
+
+
+# Metadata Created
+
+1. predicted_price -This column contains the predicted price from the zillow data set. In the data set only the price as of                     1 August 2019 is taken and is in dollar amount
+2. occupancy_score -Same as review_scores_ratinig
+3. occupancy_rate  -Percentage occupancy of the airbnb listing. It's data type is interval
+4. breakeven_years -Time it takes for the property to return it's cost price. This is also known as breakeven period and the                     is taken in the form of years
+5. X2017.06        -This is taken from the zillow data set. It is same as the price of the property in June 2017. It is in                      dollar amount
 
 Installing the required packages and loading the dataset from source
 
 <span style="color:red">To reproduce this rmarkdown create a data folder in the working directory</span>
 
 
-```{r loadbootstrap,warning=FALSE,message=FALSE,echo=TRUE,results='hide'}
+```{r loadbootstrap,warning=FALSE,message=FALSE,echo=FALSE,results='hide'}
 # data is assumed to be locally available 
 
 # otherwise we can clone the repository and then do a pull 
@@ -122,8 +139,8 @@ Mode <- function(x) {
 
 
 ```{r dimension analysis}
-kable(x=dim(AirBNB),col.names = "Dimensions Airbnb",rownames= c('observations','columns'))
-kable(x=dim(ZillowData),col.names = "Dimensions Zillow",rownames= c('observations','columns'))
+kable(x=dim(AirBNB),col.names = "Dimensions Airbnb",rownames= c('observations','columns'),align = 'l')
+kable(x=dim(ZillowData),col.names = "Dimensions Zillow",rownames= c('observations','columns'),align = 'l')
 
 ```
 
@@ -134,7 +151,7 @@ We see that AirBNB has 95 dimensions with 40753 observations and Zillow has 262 
 
 Filtering for new york City
 
-```{r analyze_zillow,warning=FALSE,message=FALSE}
+```{r analyze_zillow,warning=FALSE,message=FALSE,cache=TRUE}
 
 Z_NY<-ZillowData %>% filter(City=="New York") %>%
 select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
@@ -153,11 +170,6 @@ extract_yhat<-lapply(forecast, function(x) x[, 'yhat'][nrow(future)])
 # Set predicted price in original data frame 
 Z_NY$predicted_price<-unlist(extract_yhat)
 
-
-
-
-
-
 # select items for merging 
 
 cols<-c('zipcode','X2017.06','predicted_price')
@@ -168,10 +180,11 @@ Z_NY_predicted$zipcode<-as.factor(Z_NY_predicted$zipcode)
 
 ```
 
-Following graph show us the trends in the price. Data has been taken from the Zillow Data set
+Following graph show us the trends in the price. Data has been taken from the Zillow Data set <br/>
+Using forecasting method inspired from facebook's open source prophet package. Prediction has been solely done to see the price trends of properties
 
-Cost Price trend of zipcode **11231 **
-Cost Price trend of zipcode **11217 **
+1. Cost Price trend of zipcode **11231 **
+2. Cost Price trend of zipcode **11217 **
 
 ```{r}
 dyplot.prophet(make_model$`11231`,forecast$`11231`)
@@ -254,6 +267,9 @@ kable(x = how_many_NA ,caption = "Missing value analysis")
 
 Distribution of bedrooms variable within 
 
+1. 69 missing values or 0.17%
+2. frequency distribution shows that there are 3525 properties which are having 0 bedrooms.
+
 
 ```{r}
 # let us see the distribution of the bedrooms variable 
@@ -264,14 +280,8 @@ barplot(table(AirBNB$bedrooms),col = "blue")
 
 
 
-Since we will be matching on location ,let us check the data integrity of zipcodes and latitude and longitude
-1. 69 missing values or 0.17%
-2. frequency distribution shows that there are 3525 properties which are having 0 bedrooms.
-We will have to investigate this as to what kind of properties are they.
-
-
-
-1) zipcode should be of length 5
+Since we will be matching on location ,let us check the data integrity of zipcodes
+1. zipcode should be of length 5
 
 
 ```{r}
@@ -291,10 +301,11 @@ AirBNB<-AirBNB %>% select(-c('requires_license','experiences_offered'))
 
 ```
 
-From distinct value analysis we see that requires_license and experiences_offered have no information at all 
+From distinct value analysis we see that requires_license and experiences_offered have no information at all <br/>
 The consultancy company has already identified that 2 bedroom properties are the most profitable. 
 
-<span style="color:red">Set **no_of_bedrooms** of here</span>
+Programming has been done in a way so that the user can set parameters according to their requirement. In the code the user would see sections marked as in this e.g. <br/>
+<span style="color:red">**no_of_bedrooms** of here</span>
 
 ```{r filter_2_rooms}
 # set variable here in case the consulting company needs to do analysis on other properties
@@ -306,6 +317,34 @@ kable(how_many_NA_2_bedrooms,caption = "Missing values in the filtered data set"
 
 ```
 
+### Property Type 
+
+Using the airbnb dataset
+
+```{r property_type}
+
+AirBNB %>% select(property_type)%>% group_by(property_type) %>% summarise(count=n()) %>% arrange(desc(count)) %>% filter(count>100) %>% ggplot(data=.,mapping = aes(x=reorder(property_type,-count),y=count))+geom_bar(stat = 'identity',fill='cyan')+xlab("property_type")+ggtitle("Frequency plot of the different types of properties")
+
+
+```
+
+We can see that majority of the data set the property type is of **Apartment**
+
+# Data Integrity and Data Quality 
+
+After doing exploratory data analysis, data munging we can comment on the data quality and the data integrity 
+
+I concur with the statement *"Bad data is worse than no data"*
+
+1. Missing values : There were quite a few columns in which missing values were present. The data that concerned our           analysis was 
+   + zipcode: Merging of two datasets is dependent upon it
+   + review_score_rating : occupancy_rate is directly dependent on the score
+2. Data Quality : Some zipcodes had length other than 5 which questions the data credibility
+3. Quality Check of data was performed by
+   + removing inconsitencies : zipcodes of abnormal length, missing values in price columns, rating columns
+   + conversion into suitable data type : In our analysis there were times where columns had to be reformatted for               calculation, changed data type from character to factor, or from factor to numeric based on the charting requirements       as well as limitation of the tool at hand.
+4. Uniqueness : Some of the columns had a low count of unique values. Although low count of unique values are a                distinguished feature of binary variables(0 or 1, TRUE or FALSE, this or that) but there should not be a single value i.e    no change in variable throughout the dataset. Such columns have been removed or not considered for analysis
+5. Timeliness: The data was last scraped in the third quarter of the FY 2017 and the analysis is done in 2019. Prediction      could have been done (is done but not used) for Zillow properties, lot many factors would have to be included to do the     identical analysis for price variation for short term rentals
 
 
 ```{r merging_by_zipcode}
@@ -313,7 +352,6 @@ two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suf
 two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neighbourhood_group_cleansed)
 
 ```
-
 
 ### Visualizations of the properties versus price and other parameters
 
@@ -334,10 +372,10 @@ ggplot(data=two_room_property,mapping = aes(zipcode,price))+
 geom_boxplot(outlier.colour = "red",varwidth = TRUE)+ggtitle("Variation of price within a zipcode")
 
 
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(avg_price),count)%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-avg_price),avg_price))+geom_bar(stat = "identity")+ggtitle("Plot of average AIRBNB price against zipcode")+xlab('zipcode')
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(avg_price),count)%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-avg_price),avg_price))+geom_bar(stat = "identity",fill='steelblue')+ggtitle("Plot of average AIRBNB price against zipcode")+xlab('zipcode')
 
 
-two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(median_price=median(price,na.rm = T),count=n()) %>%arrange(desc(median_price),desc(count))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-median_price),median_price))+geom_bar(stat = "identity",mapping = aes(fill="blue"))+ggtitle("Plot of median AIRBNB price against zipcode")+xlab("zipcode")
+two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(median_price=median(price,na.rm = T),count=n()) %>%arrange(desc(median_price),desc(count))%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-median_price),median_price))+geom_bar(stat = "identity",fill="turquoise")+ggtitle("Plot of median AIRBNB price against zipcode")+xlab("zipcode")
 
 # In which neighborhood these properties are located 
 
@@ -361,9 +399,28 @@ grid.arrange(arrangeGrob(p1, p2))
   
 ```
 
-#What properties to invest in ?
+
+
+```{r dist_review_score_rating}
+
+plot(density(two_room_property$review_scores_rating,na.rm = T),main = "Distribution of review scores",xlab = "review_score_rating")
+
+```
+
+
+We see that it is skewed towards the right which means that majority of the properties have received a score greater than 50
+
+
+
+# What properties to invest in ?
+
+#### Formula used to calculate ROI
+
+$$Breakeven-Period=\frac{Cost-Price}{ Short-Term Rental Price* Occupancy Rate * Time Period }$$
 
 Time Period has been taken to be a year which is equivalent of multiplying 30 days in a month and 12 months
+
+
 
 ```{r mergeanalysis}
 
@@ -421,7 +478,7 @@ Visualing the ROI against the zipcodes
 ```{r}
 
 ggplot(ROI_mean,mapping = aes(x=zipcode,y=avg_return_in_years))+
-geom_bar(mapping = aes(reorder(zipcode,avg_return_in_years)),stat='identity',fill="green")+
+geom_bar(mapping = aes(reorder(zipcode,avg_return_in_years)),stat='identity',fill="orchid")+
 ggtitle("Breakeven analysis taking the mean price ")  
 
 
