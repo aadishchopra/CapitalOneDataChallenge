@@ -3,7 +3,6 @@ title: "AirBNB Zillow Data Challenge for Capital One"
 author: "Aadish Chopra"
 date: "7/8/2019"
 output: html_document
-code_folding: hide
 ---
 
 
@@ -13,10 +12,14 @@ options(scipen=99999)
 
 ```
 
-Sourcing the boostrap file and change the global paramters
 
 
-```{r loadbootstrap}
+Installing the required packages and loading the dataset from source
+
+<span style="color:red">To reproduce this rmarkdown create a data folder in the working directory</span>
+
+
+```{r loadbootstrap,warning=FALSE,message=FALSE,echo=TRUE,results='hide'}
 # data is assumed to be locally available 
 
 # otherwise we can clone the repository and then do a pull 
@@ -54,13 +57,14 @@ ZillowData<-read.csv("data/Zip_Zhvi_2bedroom.csv",header = T,sep = ",",stringsAs
 
 ```
 
+These are helper functions which ideally should be in a separate R file and sourced into code.
 
 
 
 ```{r load_helper_functions}
 removethesecolumns<-function(pattern_remove,dataset)
 {
-  #stricter type checking can also be used but leaving that out here 
+  
   message(" removing column ")
   message(grep(pattern = pattern_remove,x = names(dataset),value = T))
   dataset %>% select(-contains(pattern_remove,ignore.case = TRUE))
@@ -105,8 +109,8 @@ Mode <- function(x) {
 
 
 ```{r dimension analysis}
-dim(AirBNB)
-dim(ZillowData)
+kable(x=dim(AirBNB),col.names = "Dimensions Airbnb",rownames= c('observations','columns'))
+kable(x=dim(ZillowData),col.names = "Dimensions Zillow",rownames= c('observations','columns'))
 
 ```
 
@@ -123,30 +127,39 @@ select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
 colnames(Z_NY)[1]<-"zipcode"
 trans_zil = setNames(data.frame(t(Z_NY[,-1])), Z_NY[,1])
 present<-data.frame(ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2017/06/01'),by = 'month'))
+
+# Predicting prices till Aug 2019
 future<-data.frame(ds=seq.Date(from = as.Date('1996/04/01'),to = as.Date('2019/08/01'),by = 'month'))
 bind_for_prophet<-apply(trans_zil,2,cbind.data.frame,present)
 bind_for_prophet<-lapply(bind_for_prophet, setNames,c('y','ds'))
 make_model<-lapply(bind_for_prophet, prophet)
 forecast<-lapply(make_model, predict,future)
 extract_yhat<-lapply(forecast, function(x) x[, 'yhat'][nrow(future)])
+
+# Set predicted price in original data frame 
 Z_NY$predicted_price<-unlist(extract_yhat)
 
 
-# create examples to show fitting and plotting 
-dyplot.prophet(make_model$`10025`,forecast$`10025`)
 
+
+
+
+# select items for merging 
 
 cols<-c('zipcode','X2017.06','predicted_price')
-
-# Use this
-
 Z_NY_predicted<-Z_NY[,cols]
 Z_NY_predicted$zipcode<-as.factor(Z_NY_predicted$zipcode)
 
 
-#mapply(dyplot.prophet , make_model,forecast)
+
+```
 
 
+Price trend of zipcode **10025 **
+
+
+```{r}
+dyplot.prophet(make_model$`10025`,forecast$`10025`)
 
 ```
 
@@ -154,7 +167,8 @@ Z_NY_predicted$zipcode<-as.factor(Z_NY_predicted$zipcode)
 
 
 
-##Exploring AIRBNB data
+
+## Exploring AIRBNB data
 
 Let's us look at the data first. The metadata is also available in the docx document
 
@@ -182,9 +196,6 @@ Price and other columns associated with money are listed in dollars. For example
 
 #identify which columns needs stripping
 remove_dollar<-strip_money(pattern = 'price',dataset = AirBNB)
-
-#manually inspecting
-#colnames(AirBNB[AirBNB %>% str_detect(pattern = '\\$')])
 additional_columns<-c('security_deposit','cleaning_fee','extra_people')
 
 remove_dollar<-c(remove_dollar,additional_columns)
@@ -208,6 +219,7 @@ URL columns would not be useful therefore removing these columns
 ```{r removeurlcolumns}
 AirBNB<-removethesecolumns(pattern_remove = "url",dataset = AirBNB)
 AirBNB<-removethesecolumns(pattern_remove = "scrape",dataset = AirBNB)
+AirBNB<-AirBNB %>% select(-c('license','has_availability'))
 
 ```
 
@@ -216,15 +228,25 @@ What columns have NA values
 We see that there are 2 columns which have no values at all. We can delete those columns. 
 As a rule of thumb we can safely remove columns which have missing values in ~[80]% of the rows
 
+Missing value analysis
+
+
 ```{r NAs}
 
-how_many_NA<-as.data.frame(unlist(apply(AirBNB, 2, noofNA)))
+how_many_NA<-data.frame('missing values'=sort(unlist(apply(AirBNB, 2, noofNA)),decreasing = T))
 kable(x = how_many_NA ,caption = "Missing value analysis")
-AirBNB<-AirBNB %>% select(-c('license','has_availability'))
+
+# let us see the distribution of the bedrooms variable 
+barplot(table(AirBNB$bedrooms),col = "blue")
 
 ```
 
 Since we will be matching on location ,let us check the data integrity of zipcodes and latitude and longitude
+1) 69 missing values or 0.17%
+2) frequency distribution shows that there are 3525 properties which are having 0 bedrooms.
+We will have to investigate this as to what kind of properties are they.
+
+
 
 1) zipcode should be of length 5
 
@@ -236,83 +258,37 @@ nrow(AirBNB)-sum(str_count(AirBNB$zipcode,pattern = "[0-9]")==5)
 
 ```
 
-
-
-
-
 There are columns which are disseminating no information. Let us analyze columns for unique values
 
 ```{r delete_no_information}
 
-apply(AirBNB,2,analyze_distinct_values)
+kable(x=apply(AirBNB,2,analyze_distinct_values),col.names = 'Distinct Values')
+
 AirBNB<-AirBNB %>% select(-c('requires_license','experiences_offered'))
 
-# converting into factor
+
 
 ```
 
 From distinct value analysis we see that requires_license and experiences_offered have no information at all 
 
-
 The consultancy company has already identified that 2 bedroom properties are the most profitable. 
 
-
-
-
-
-
 ```{r filter_2_rooms}
-#
-no_of_bedrooms<-2
+# set variable here in case the consulting company needs to do analysis on other properties
+no_of_bedrooms=2
 air_two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==no_of_bedrooms)
-how_many_NA_2_bedrooms<-as.data.frame(unlist(apply(air_two_room_property,MARGIN =  2, noofNA)))
+how_many_NA_2_bedrooms<-data.frame(MissingValues=sort(unlist(apply(air_two_room_property,MARGIN =  2, noofNA)),decreasing = T))
 
-
-
-```
-
-#What properties to invest in ?
-
-
-```{r mergeanalysis}
-
-two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
-two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neighbourhood_group_cleansed)
-
-two_room_property$occupancy_score=two_room_property$review_scores_rating
-kable(data.frame(occupancy_score=c('75-100','50-75','25-50','0-25'),occupancy_rate=c('75%','65%','55%','45%')),caption = "Occupancy rate based on review score and number of reviews")
-
-two_room_property$occupancy_rate<-cut(two_room_property$occupancy_score, 
-                    breaks = c(0,25,50,75,100), 
-                    labels = c(".45", ".55", ".65", ".75"), 
-                    right = TRUE)
-two_room_property$occupancy_rate=as.numeric(as.character(two_room_property$occupancy_rate))
-days=30
-months=12
-two_room_property$breakeven_years=two_room_property$X2017.06/(two_room_property$price*two_room_property$occupancy_rate*months*days)
-sum(is.na(two_room_property$occupancy_rate))
-
-# profit-loss matrix by taking averages across the zipcodes
-
-two_room_property %>% group_by(zipcode) %>% summarise(avg_return_in_years=mean(breakeven_years,na.rm = T),avg_airbnb_price=mean(price,na.rm = T),avg_cost_price=mean(X2017.06,na.rm = T),count=n()) %>% arrange((avg_return_in_years))
- 
-# profit-loss matrix by taking median across the zipcodes
-
-two_room_property %>% group_by(zipcode) %>% summarise(median_return_in_years=median(breakeven_years,na.rm = T),median_airbnb_price=median(price,na.rm = T),median_cost_price=median(X2017.06,na.rm = T),count=n()) %>% arrange((median_return_in_years))
+kable(how_many_NA_2_bedrooms,caption = "Missing values in the filtered data set")
 
 ```
-
-
-
-
- 
-
-
-
 
 ###Identify which areas are good
 
 ```{r visualizations,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE }
+
+two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
 
 theme_set(theme_bw())
 
@@ -353,57 +329,43 @@ grid.arrange(arrangeGrob(p1, p2))
   
 ```
 
+#What properties to invest in ?
 
 
+```{r mergeanalysis}
 
-If time permits I would like to check which kind of property is most suitable
 
-```{r bedrooms}
-class(AirBNB$bedrooms)
-# let us see the distribution of the variable
-table(AirBNB$bedrooms)
-percentage_missing<-(sum(is.na(AirBNB$bedrooms))/nrow(AirBNB))*100
-zero_bedrooms<-AirBNB[AirBNB$bedrooms==0,]
+two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neighbourhood_group_cleansed)
 
+two_room_property$occupancy_score=two_room_property$review_scores_rating
+kable(data.frame(occupancy_score=c('75-100','50-75','25-50','0-25'),occupancy_rate=c('75%','65%','55%','45%')),caption = "Occupancy rate based on review score and number of reviews")
+
+two_room_property$occupancy_rate<-cut(two_room_property$occupancy_score, 
+                    breaks = c(0,25,50,75,100), 
+                    labels = c(".45", ".55", ".65", ".75"), 
+                    right = TRUE)
+two_room_property$occupancy_rate=as.numeric(as.character(two_room_property$occupancy_rate))
+days=30
+months=12
+two_room_property$breakeven_years=two_room_property$X2017.06/(two_room_property$price*two_room_property$occupancy_rate*months*days)
+sum(is.na(two_room_property$occupancy_rate))
+
+# profit-loss matrix by taking averages across the zipcodes
+
+two_room_property %>% group_by(zipcode) %>% summarise(avg_return_in_years=mean(breakeven_years,na.rm = T),avg_airbnb_price=mean(price,na.rm = T),avg_cost_price=mean(X2017.06,na.rm = T),count=n()) %>% arrange((avg_return_in_years))
+ 
+# profit-loss matrix by taking median across the zipcodes
+
+two_room_property %>% group_by(zipcode) %>% summarise(median_return_in_years=median(breakeven_years,na.rm = T),median_airbnb_price=median(price,na.rm = T),median_cost_price=median(X2017.06,na.rm = T),count=n()) %>% arrange((median_return_in_years))
 
 ```
-
-We observer two things 
-
-1) 69 missing values or 0.17%
-2) frequency distribution shows that there are 3525 properties which are having 0 bedrooms.
-We will have to investigate this as to what kind of properties are they.
 
 
 We will only look at those properties which are 2 bedrooms
-
 Since 0 bedrooms can be a field which the user didn't enter or can be bad data
-
-
+If time permits I would like to check which kind of property is most suitable
 #Fixing bedrooms with zero length 
-
-
-
-```{r fix_0_bedrooms}
-
-ggplot(data = zero_bedrooms,mapping=aes(zero_bedrooms$beds,fill=zero_bedrooms$property_type))+
-geom_histogram()+
-scale_x_continuous(breaks = zero_bedrooms$beds)
-
-  
-```
-
 Most of the data is for 1,2 and 3 beds
-
-```{r price_analysis,eval=TRUE,echo=FALSE}
-
-
-# p<-ggplot(data=zero_bedrooms %>% filter(beds<4),mapping = aes(zero_bedrooms$price))+
-# geom_histogram(stat = 'count')
-
-# p+facet_grid(vars(beds))
-
-```
 
 Clustering can be done using latitude or longitude. We will deal with this later
 
