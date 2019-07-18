@@ -2,10 +2,14 @@
 
 /.Rproj
 
-/data
+/*data
 *.html
 /.Rhistory
 
 
 /.Rproj.user
 .Rproj.user
+/rsconnect
+*.txt
+*.zip
+/zip
