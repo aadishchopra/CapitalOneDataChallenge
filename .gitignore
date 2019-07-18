@@ -2,7 +2,7 @@
 
 /.Rproj
 
-/*data
+/*data/*
 *.html
 /.Rhistory
 
@@ -12,4 +12,4 @@
 /rsconnect
 *.txt
 *.zip
-/zip
+/zip/*
