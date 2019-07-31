@@ -2,7 +2,10 @@
 
 /.Rproj
 
-/*data/*
+/data
+/data_analysis_documentation_files
+/data_analysis_files
+/data_analysis_final__files
 *.html
 /.Rhistory
 
@@ -12,4 +15,4 @@
 /rsconnect
 *.txt
 *.zip
-/zip/*
+/zip
