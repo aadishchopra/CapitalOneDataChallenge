@@ -1,10 +1,11 @@
 ---
-title: "AirBNB Zillow Data Challenge Document for Capital One"
+title: "Data Challenge Document for Capital One"
 author: "Aadish Chopra"
 date: "7/8/2019"
 output:
-  word_document: default
-  html_document: default
+  html_document:
+    toc: true
+    theme: united
 ---
 
 ```{r setup, include=FALSE}
@@ -12,6 +13,56 @@ knitr::opts_chunk$set(echo = FALSE,fig.width = 10,warning = FALSE,message = FALS
 options(scipen=99999)
 
 ```
+
+
+```{r loadbootstrap,warning=FALSE,message=FALSE,echo=FALSE,results='hide'}
+# data is assumed to be locally available 
+
+# otherwise we can clone the repository and then do a pull 
+# Load all the libraries 
+
+required_packages<-c('knitr','htmlTools','dplyr','htmlTable','stringr','ggplot2','prophet','gridExtra','scales','mice')
+load_required_packages<-function(required_packages){
+  if(!require(required_packages,character.only = TRUE))
+  {
+    install.packages(required_packages,repos="http://cran.us.r-project.org")
+    require(required_packages,character.only = TRUE)
+  }
+  else
+  {
+    require(required_packages,character.only = TRUE)
+  }
+}
+
+lapply(required_packages,load_required_packages )
+
+# Import the dataset
+if(!file.exists('data/listings.csv'))
+{
+  listing_tar<-download.file(url="http://data.insideairbnb.com/united-states/ny/new-york-city/2017-05-02/data/listings.csv.gz",destfile = "data/listings.csv.gz")
+  untar(tarfile = 'data/listings.csv.gz',exdir = 'data')  
+}
+
+if(!file.exists('data/Zip_Zhvi_2bedroom.csv')){
+untar(tarfile = 'data/Zip_Zhvi_2bedroom.csv.zip',exdir = 'data')
+}
+
+AirBNB<-read.csv(file = "data/listings.csv",header = T,sep = ",",stringsAsFactors = F)
+ZillowData<-read.csv("data/Zip_Zhvi_2bedroom.csv",header = T,sep = ",",stringsAsFactors = F)
+
+
+```
+
+
+```{r,fig.width=5,fig.height=5}
+
+htmltools::img(src = knitr::image_uri(file.path("images","Capital-One.jpg")), 
+               alt = 'logo', 
+               style = 'position:absolute; top:0; right:0; padding:10px;')
+  
+```
+
+
 
 # Problem Statement
 
@@ -46,45 +97,6 @@ Find properties based on zipcodes in the new york city which would yield the max
 5. X2017.06        -This is taken from the zillow data set. It is same as the cost price of the property in June 2017. It is in                  dollar amount
 
 
-
-
-```{r loadbootstrap,warning=FALSE,message=FALSE,echo=FALSE,results='hide'}
-# data is assumed to be locally available 
-
-# otherwise we can clone the repository and then do a pull 
-# Load all the libraries 
-
-required_packages<-c('knitr','dplyr','htmlTable','stringr','ggplot2','prophet','gridExtra','scales','mice')
-load_required_packages<-function(required_packages){
-  if(!require(required_packages,character.only = TRUE))
-  {
-    install.packages(required_packages)
-    require(required_packages,character.only = TRUE)
-  }
-  else
-  {
-    require(required_packages,character.only = TRUE)
-  }
-}
-
-lapply(required_packages,load_required_packages )
-
-# Import the dataset
-if(!file.exists('data/listings.csv'))
-{
-  listing_tar<-download.file(url="http://data.insideairbnb.com/united-states/ny/new-york-city/2017-05-02/data/listings.csv.gz",destfile = "data/listings.csv.gz")
-  untar(tarfile = 'data/listings.csv.gz',exdir = 'data')  
-}
-
-if(!file.exists('data/Zip_Zhvi_2bedroom.csv')){
-untar(tarfile = 'data/Zip_Zhvi_2bedroom.csv.zip',exdir = 'data')
-}
-
-AirBNB<-read.csv(file = "data/listings.csv",header = T,sep = ",",stringsAsFactors = F)
-ZillowData<-read.csv("data/Zip_Zhvi_2bedroom.csv",header = T,sep = ",",stringsAsFactors = F)
-
-
-```
 
 
 
@@ -147,6 +159,16 @@ We see that AirBNB has 95 dimensions with 40753 observations and Zillow has 262 
 
 
 # Analyzing Zillow data set
+
+#### How does Zillow data look ?
+
+```{r top5rows}
+kable(head(ZillowData[,c(1:7,8,262)]),align = 'l',caption="Zillow Data")
+
+```
+
+
+
 
 Filtering for new york City
 
@@ -473,7 +495,7 @@ We see that it is skewed towards the left which means that majority of the prope
 
 #### Formula used to calculate ROI
 
-$$Breakeven-Period=\frac{Cost-Price}{ Short-Term Rental Price* Occupancy Rate * Time Period }$$
+$$Breakeven-Period=\frac{CostPrice}{ ShortTerm Rental Price* Occupancy Rate * Time Period }$$
 
 <span style="color:blue">Time Period is taken as year </span>
 
@@ -571,6 +593,6 @@ Therefore the zipcodes to invest in are
 2. Factors such as transportation, proximity to work location can be used to map the area for long-term         rentals
 3. NY being a financial capital has a scope for long term rentals. Hence, the properties can be rented out on a long term basis as well. 
 4. There are 618 rows which have improper length zipcodes. These can be imputed using the latitude and          longitudes
-5. Crime score is an important factor in determining the price. Crime score is freely available online and can be used to for deeper analysis.
-6. Majority of the tourists book short term rentals in NY city hence holidays and proximity to tourist locations should be accounted for.
+5. Crime score is an important factor in determining the price. Crime score is freely available online and can be used for deeper analysis.
+6. Majority of the tourists book short term rentals in NY city hence holidays (variable pricing can be done ) and closeness to tourist locations should be accounted for.
 
