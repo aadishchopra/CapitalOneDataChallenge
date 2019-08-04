@@ -167,13 +167,10 @@ kable(head(ZillowData[,c(1:7,8,262)]),align = 'l',caption="Zillow Data")
 
 ```
 
-
-
-
-Filtering for new york City
+There are just 3 missing values in the columns of our interest in Zillow data set. So we will leave it as it is.
 
 ```{r analyze_zillow,warning=FALSE,message=FALSE,cache=TRUE}
-
+#Filtering for new york City
 Z_NY<-ZillowData %>% filter(City=="New York") %>%
 select(-c(RegionID,City,State,Metro,CountyName,SizeRank))
 colnames(Z_NY)[1]<-"zipcode"
@@ -222,6 +219,15 @@ dyplot.prophet(make_model$`11217`,forecast$`11217`)
 
 Let us look at the data first. The metadata is also available in the docx document
 
+
+```{r Airbnbdata}
+
+kable(head(AirBNB[,c('id','neighbourhood_group_cleansed','city','state','zipcode','property_type','bedrooms','price','review_scores_rating')]),caption = "AIRBNB data")
+
+```
+
+
+
 ```{r viewdata ,eval=FALSE,echo=FALSE}
 
 # Looking at the first 90 columns 
@@ -268,14 +274,13 @@ URL columns would not be useful, therefore removing these columns .
 ```{r removeurlcolumns}
 AirBNB<-removethesecolumns(pattern_remove = "url",dataset = AirBNB)
 AirBNB<-removethesecolumns(pattern_remove = "scrape",dataset = AirBNB)
-AirBNB<-AirBNB %>% select(-c('license','has_availability'))
+
 
 ```
 
 
 ## What columns have missing values 
 
-We see that there are 2 columns which have no values at all which are 'license','has_availability'.We can delete those columns. As a rule of thumb, we can safely remove columns which have missing values in ~[80]% of the rows
 
 ### Missing value analysis
 
@@ -285,8 +290,12 @@ We see that there are 2 columns which have no values at all which are 'license',
 how_many_NA<-data.frame('missing values'=sort(unlist(apply(AirBNB, 2, noofNA)),decreasing = T))
 kable(x = how_many_NA ,caption = "Missing value analysis")
 
+
+AirBNB<-AirBNB %>% select(-c('license','has_availability'))
+
 ```
 
+We see that license and has availability has all the values missing . So these columns can be removed safely.
 
 
 Distribution of bedrooms variable
@@ -327,10 +336,12 @@ AirBNB<-AirBNB %>% select(-c('requires_license','experiences_offered'))
 ```
 
 From distinct value analysis, we see that requires_license and experiences_offered have no information at all <br/>
-The consultancy company has already identified that 2 bedroom properties are the most profitable. 
 
-Programming has been done in a way so that the user can set parameters according to their requirement. In the code, the user would see sections marked as variables like. <br/>
-<span style="color:red">**no_of_bedrooms=2**</span>
+Since the consultancy company has already identified that 2 bedroom properties are the most profitable we will be filtering the Airbnb dataset and will only take those propeties which have 2 bedrooms 
+
+Programming has been done in a way so that the user can set parameters according to their requirement. While writing code it has been ensured that code can be reused by the consulting company needs and demands.If in future they are interested in 1 bedroom properties and in other cities they can quicky change variables such as these <br/>
+<span style="color:red">**no_of_bedrooms=1**</span>
+<span style="color:red">**city='Chicago'**</span>
 
 ```{r filter_2_rooms}
 # set variable here in case the consulting company needs to do analysis on other properties
@@ -338,9 +349,15 @@ no_of_bedrooms=2
 air_two_room_property<-AirBNB %>% filter(AirBNB$bedrooms ==no_of_bedrooms)
 how_many_NA_2_bedrooms<-data.frame(MissingValues=sort(unlist(apply(air_two_room_property,MARGIN =  2, noofNA)),decreasing = T))
 
+```
+
+
+```{r results='hide'}
+
 kable(how_many_NA_2_bedrooms,caption = "Missing values in the filtered data set")
 
 ```
+
 
 
 ### Property Type 
@@ -354,7 +371,7 @@ AirBNB %>% select(property_type)%>% group_by(property_type) %>% summarise(count=
 
 ```
 
-We can see that majority of properties are of **Apartment** type
+We can see that majority of properties are of **Apartment** type which was expected in a city like New York. We would have factored in ~~property_type~~ had there been an equitable distribution.
 
 # Data Integrity and Data Quality 
 
@@ -363,13 +380,12 @@ After doing exploratory data analysis and data munging, we can comment on the da
 I concur with the statement *"Bad data is worse than no data"*.
 
 1. Missing values : There were a few columns in which missing values were present. The variables important for our            analysis are
-   + zipcode: There are 618 zipcodes which are missing. These could be have been the potential zipcodes in the new york area               Merging of two datasets is dependent upon it
    + review_score_rating : occupancy_rate is directly dependent on the score
    + price : There are 41 properties which do not have their price listed.
 2. Data Quality : Some zipcodes had length other than 5 which questions the data credibility
 3. Quality Check of data was performed by
    + removing inconsistencies : zipcodes of abnormal length, missing values in price columns, rating columns
-   + conversion into suitable data type : There are certain columns which were reformatted for calculation, required data type from character to factor, or from factor to numeric based on the charting requirements as well as limitation of the tool at hand.
+   + conversion into suitable data type : There are certain columns which were reformatted for calculation,data type was changed from character to factor, or from factor to numeric based on the charting requirements as well as limitation of the tool at hand.
 4. Uniqueness aka Variance : Some of the columns had a low count of unique values. Although low count of unique values are a    distinguished feature of binary variables(0 or 1, TRUE or FALSE, this or that) but there should not be a single value i.e    no change in variable throughout the dataset. Such columns have been removed or not considered for analysis
 5. Timeliness: The data was last scraped in the third quarter of the FY 2017 and the analysis is done in 2019. Prediction      could have been done (is done but not used) for Zillow properties but we don't have 2019 Airbnb data our analysis is        restricted to FY 2017
 
@@ -382,19 +398,14 @@ two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neig
 
 ### Visualizations of the properties versus price and other parameters
 
-There are few zipcodes which have over 70 properties 
+There are few zipcodes which have over 70 properties. The <span style="color:red">red dotted line</span> indicates the arbitrary y-axis intercept at 70
 
 ```{r visualizations,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE }
 
-two_room_property<-merge(air_two_room_property,Z_NY_predicted,by = 'zipcode',suffixes = c('air','zil'))
 theme_set(theme_bw())
 
 two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(n_count=n()) %>% arrange(desc(n_count))%>% top_n(n = 25)%>%
-ggplot(data = .,mapping = aes(reorder(zipcode,-n_count),n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 70,linetype='dashed',color='red')+ggtitle("Count of properties plotted against zipcode")+xlab('zipcode')+ylab('count')  
-
-
-
-
+ggplot(data = .,mapping = aes(reorder(zipcode,-n_count),n_count,group=1))+geom_line(stat = 'identity')+geom_hline(yintercept = 70,linetype='dashed',color='red')+ggtitle("Count of properties plotted against zipcode")+xlab('zipcode')+ylab('count')
 
 
 ```
@@ -477,10 +488,9 @@ Averages are bit higher than median price suggesting averages are being pulled o
 plot(density(two_room_property$price,na.rm = T),main = "Distribution of price",xlab = "price")
 abline(v=750,col= "red",lty="dashed")
 
-
 ```
 
-We see that the distribution is right skewed
+We see that the distribution is right skewed. The <span style="color:red">red dotted line</span> indicates the arbitrary x-axis intercept at 750 which I assume to be  high price for a AirBNB and corroborated by the outlier plot.
 
 ```{r dist_review_score_rating}
 
