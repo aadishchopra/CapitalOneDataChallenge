@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,fig.width = 10,warning = FALSE,message = FALSE)
+knitr::opts_chunk$set(echo = TRUE,fig.width = 10,warning = FALSE,message = FALSE)
 options(scipen=99999)
 
 ```
@@ -392,7 +392,7 @@ two_room_property$neighbourhood_group_cleansed<-as.factor(two_room_property$neig
 
 There are few zipcodes which have over 70 properties. The <span style="color:red">red dotted line</span> indicates the arbitrary y-axis intercept at 70
 
-```{r visualizations,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE }
+```{r visualizations,fig.width=10,message=FALSE,warning=FALSE }
 
 theme_set(theme_bw())
 
@@ -406,7 +406,7 @@ ggplot(data = .,mapping = aes(reorder(zipcode,-n_count),n_count,group=1))+geom_l
 The boxplot shows 
 
 
-```{r visualizations1,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE }
+```{r visualizations1,fig.width=10,message=FALSE,warning=FALSE }
 
 # boxplot to show variations in price within a zipcode
 ggplot(data=two_room_property,mapping = aes(zipcode,price))+
@@ -420,7 +420,7 @@ geom_boxplot(outlier.colour = "red",varwidth = TRUE)+ggtitle("Variation of airbn
 
 
 
-```{r visualizations2,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE}
+```{r visualizations2,fig.width=10,message=FALSE,warning=FALSE}
 
 # In which neighborhood these properties are located 
 
@@ -431,7 +431,7 @@ two_room_property %>% group_by(neighbourhood_group_cleansed) %>% summarise(avg_p
 
 
 
-```{r visualizations3,fig.width=12,echo=FALSE,message=FALSE,warning=FALSE}
+```{r visualizations3,fig.width=12,message=FALSE,warning=FALSE}
 # which zipcodes are located in which location 
 
 ggplot(data=two_room_property,mapping=aes(zipcode,fill=neighbourhood_group_cleansed))+
@@ -440,7 +440,7 @@ geom_histogram(stat='count')+facet_grid(neighbourhood_group_cleansed~.)+ggtitle(
 ```
 
 
-```{r visualizations4,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE}
+```{r visualizations4,fig.width=10,message=FALSE,warning=FALSE}
 p1<-ggplot(data = Z_NY_predicted,mapping = aes(x=reorder(zipcode,-predicted_price),y=predicted_price))+
 geom_bar(stat='identity')+ggtitle("Median cost price predicted for August 2019 by zipcode",subtitle = "Zillow")+xlab("zipcode")+ylab("predicted price")
 
@@ -459,7 +459,7 @@ grid.arrange(arrangeGrob(p1, p2))
   + Zipcodes with low price (100215,....100304)
 
 
-```{r visualizations5,fig.width=10,echo=FALSE,message=FALSE,warning=FALSE}
+```{r visualizations5,fig.width=10,message=FALSE,warning=FALSE}
 two_room_property %>% select(zipcode,price) %>% filter(zipcode>0)%>% group_by(zipcode)%>% summarise(avg_price=mean(price,na.rm = T),count=n()) %>%arrange(desc(avg_price),count)%>%mutate_if(is.numeric,round,digits=0)%>% top_n(n = 25)%>% ggplot(.,mapping = aes(reorder(zipcode,-avg_price),avg_price))+geom_bar(stat = "identity",fill='steelblue')+ggtitle("Plot of average AIRBNB price against zipcode")+xlab('zipcode')
 
 
